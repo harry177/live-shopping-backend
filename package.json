@@ -1,0 +1,9 @@
+{
+  "name": "live-shopping-backend",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix apps/api run dev",
+    "build": "npm --prefix apps/api run build",
+    "start": "npm --prefix apps/api run start"
+  }
+}
