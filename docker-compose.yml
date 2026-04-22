@@ -1,16 +1,6 @@
 version: "3.9"
 
 services:
-  api:
-    build:
-      context: ./apps/api
-    container_name: webrtc-api
-    ports:
-      - "3001:3001"
-    env_file:
-      - .env
-    restart: unless-stopped
-
   livekit:
     image: livekit/livekit-server:latest
     container_name: livekit
@@ -18,20 +8,7 @@ services:
     ports:
       - "7880:7880"
       - "7881:7881"
-      - "50000-50100:50000-50100/udp"
+      - "51000-51100:51000-51100/udp"
     volumes:
       - ./infra/livekit/livekit.yaml:/etc/livekit.yaml
-    restart: unless-stopped
-
-  coturn:
-    image: coturn/coturn:latest
-    container_name: coturn
-    ports:
-      - "3478:3478/tcp"
-      - "3478:3478/udp"
-      - "5349:5349/tcp"
-      - "5349:5349/udp"
-    volumes:
-      - ./infra/coturn/turnserver.conf:/etc/coturn/turnserver.conf
-    command: ["-c", "/etc/coturn/turnserver.conf"]
     restart: unless-stopped
