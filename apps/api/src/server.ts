@@ -1,10 +1,10 @@
 import dotenv from "dotenv";
-dotenv.config({ path: "../../.env" });
+dotenv.config();
 
 import app from "./app";
+import { env } from "./config/env";
+import { logger } from "./config/logger";
 
-const port = Number(process.env.PORT || 3001);
-
-app.listen(port, () => {
-  console.log(`API listening on port ${port}`);
+app.listen(env.PORT, () => {
+  logger.info(`API listening on port ${env.PORT}`);
 });

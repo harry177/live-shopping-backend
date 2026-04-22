@@ -3,36 +3,29 @@ import cors from "cors";
 import helmet from "helmet";
 import pinoHttp from "pino-http";
 
+import { env } from "./config/env";
+import { logger } from "./config/logger";
+import routes from "./routes";
+
 const app = express();
 
 app.use(helmet());
 
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+    origin: env.CORS_ORIGIN,
     credentials: true,
   })
 );
 
 app.use(
   pinoHttp({
-    transport:
-      process.env.NODE_ENV !== "production"
-        ? {
-            target: "pino-pretty",
-          }
-        : undefined,
+    logger,
   })
 );
 
 app.use(express.json());
 
-app.get("/health", (req, res) => {
-  req.log.info("Health check hit");
-
-  res.json({
-    ok: true,
-  });
-});
+app.use(routes);
 
 export default app;
