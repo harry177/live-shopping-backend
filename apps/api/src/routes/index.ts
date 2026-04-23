@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { createLiveKitToken } from "../controllers/livekit.controller";
+import authRoutes from "./auth.routes";
+import streamRoutes from "./stream.routes";
 
 const router = Router();
 
@@ -17,6 +18,7 @@ router.get("/api/v1/health", (_req, res) => {
   });
 });
 
-router.post("/api/v1/livekit/token", createLiveKitToken);
+router.use("/api/v1/auth", authRoutes);
+router.use("/api/v1/streams", streamRoutes);
 
 export default router;
