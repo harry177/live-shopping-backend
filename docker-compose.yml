@@ -4,7 +4,7 @@ services:
   api:
     build:
       context: ./apps/api
-    container_name: api
+    container_name: live-shopping-api
     env_file:
       - .env
     ports:
@@ -15,7 +15,7 @@ services:
 
   livekit:
     image: livekit/livekit-server:latest
-    container_name: livekit
+    container_name: live-shopping-livekit
     command: --config /etc/livekit.yaml
     ports:
       - "7880:7880"

@@ -14,7 +14,7 @@ import {
 import { env } from "../config/env";
 import { AuthUser } from "../types/auth";
 
-const STREAM_DURATION_MS = 30 * 1000;
+const STREAM_DURATION_MS = 60 * 1000;
 
 export async function getActiveStream() {
   return findActiveStream();
