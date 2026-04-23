@@ -5,7 +5,7 @@ import { env } from "./config/env";
 import { logger } from "./config/logger";
 import { stopExpiredStreams } from "./services/stream.service";
 
-app.listen(env.PORT, () => {
+app.listen(env.PORT, "0.0.0.0", () => {
   logger.info(`API listening on port ${env.PORT}`);
 });
 
