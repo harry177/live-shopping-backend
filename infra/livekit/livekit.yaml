@@ -13,4 +13,4 @@ rtc:
       secret: some-long-random-secret
 
 keys:
-  devkey: devsecret
+  livekitapikey: super-long-random-secret-at-least-32-chars
