@@ -10,7 +10,7 @@ rtc:
     - host: turn.shopinstream.com
       port: 3478
       protocol: udp
-      secret: some-long-random-secret
+      secret: another-super-long-random-secret-at-least-32-chars
 
 keys:
   livekitapikey: super-long-random-secret-at-least-32-chars
