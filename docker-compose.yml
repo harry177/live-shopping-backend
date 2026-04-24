@@ -17,10 +17,28 @@ services:
     image: livekit/livekit-server:latest
     container_name: live-shopping-livekit
     command: --config /etc/livekit.yaml
+    env_file:
+      - .env
     ports:
       - "7880:7880"
       - "7881:7881"
       - "51000-51100:51000-51100/udp"
     volumes:
       - ./infra/livekit/livekit.yaml:/etc/livekit.yaml
+    restart: unless-stopped
+    depends_on:
+      - coturn
+
+  coturn:
+    image: coturn/coturn:latest
+    container_name: live-shopping-coturn
+    command: -c /etc/turnserver.conf
+    env_file:
+      - .env
+    ports:
+      - "3478:3478"
+      - "3478:3478/udp"
+      - "49160-49200:49160-49200/udp"
+    volumes:
+      - ./infra/coturn/turnserver.conf:/etc/turnserver.conf
     restart: unless-stopped
