@@ -35,9 +35,8 @@ services:
   egress:
     image: livekit/egress:latest
     container_name: live-shopping-egress
-    command: ["egress", "--config", "/etc/egress.yaml"]
-    env_file:
-    - .env
+    environment:
+      EGRESS_CONFIG_FILE: /etc/egress.yaml
     shm_size: "1gb"
     volumes:
     - ./infra/egress/egress.yaml:/etc/egress.yaml
