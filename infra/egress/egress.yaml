@@ -1,0 +1,9 @@
+api_key: livekitapikey
+api_secret: super-long-random-secret-at-least-32-chars
+ws_url: ws://livekit:7880
+
+redis:
+  address: redis:6379
+
+logging:
+  level: info

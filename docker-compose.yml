@@ -9,6 +9,8 @@ services:
       - .env
     ports:
       - "3001:3001"
+    volumes:
+      - ./recordings:/recordings
     restart: unless-stopped
     depends_on:
       - livekit
@@ -27,7 +29,27 @@ services:
       - ./infra/livekit/livekit.yaml:/etc/livekit.yaml
     restart: unless-stopped
     depends_on:
+      - redis
       - coturn
+
+  egress:
+    image: livekit/egress:latest
+    container_name: live-shopping-egress
+    command: --config /etc/egress.yaml
+    env_file:
+      - .env
+    volumes:
+      - ./infra/egress/egress.yaml:/etc/egress.yaml
+      - ./recordings:/recordings
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - livekit
+
+  redis:
+    image: redis:7-alpine
+    container_name: live-shopping-redis
+    restart: unless-stopped    
 
   coturn:
     image: coturn/coturn:latest

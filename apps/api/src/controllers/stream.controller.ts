@@ -1,5 +1,9 @@
 import { Request, Response } from "express";
 import {
+  getCompletedRecordings,
+  startStreamRecording,
+} from "../services/recording.service";
+import {
   getActiveStream,
   startStream,
   stopStream,
@@ -73,4 +77,34 @@ export async function createViewerTokenController(
       error: error instanceof Error ? error.message : "Failed to join stream",
     });
   }
+}
+
+export async function startRecordingController(
+  req: Request<{ id: string }>,
+  res: Response,
+) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const recording = await startStreamRecording(req.params.id, req.user.id);
+
+    return res.status(200).json({ recording });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to start recording";
+
+    return res.status(message === "Forbidden" ? 403 : 400).json({
+      error: message,
+    });
+  }
+}
+
+export async function getRecordingsController(_req: Request, res: Response) {
+  const recordings = await getCompletedRecordings();
+
+  return res.status(200).json({
+    recordings,
+  });
 }

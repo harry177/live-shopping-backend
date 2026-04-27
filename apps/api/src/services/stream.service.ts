@@ -11,6 +11,7 @@ import {
   createViewerToken,
   deleteRoom,
 } from "./livekit.service";
+import { stopStreamRecording } from "./recording.service";
 import { env } from "../config/env";
 import { AuthUser } from "../types/auth";
 
@@ -70,6 +71,8 @@ export async function stopStream(streamId: string, user: AuthUser) {
   if (stream.status !== "live") {
     return;
   }
+
+  await stopStreamRecording(stream.id);
 
   try {
     await deleteRoom(stream.room_name);

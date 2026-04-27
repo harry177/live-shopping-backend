@@ -24,6 +24,8 @@ app.use(
   })
 );
 
+app.use("/recordings", express.static("/recordings"));
+
 app.use(express.json());
 
 app.use(routes);
