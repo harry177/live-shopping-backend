@@ -9,7 +9,13 @@ import routes from "./routes";
 
 const app = express();
 
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: {
+      policy: "cross-origin",
+    },
+  }),
+);
 
 app.use(
   cors({
@@ -24,7 +30,19 @@ app.use(
   })
 );
 
-app.use("/recordings", express.static("/recordings"));
+app.use(
+  "/recordings",
+  express.static("/recordings", {
+    setHeaders: (res) => {
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+      res.setHeader(
+        "Access-Control-Allow-Origin",
+        "https://shopping-stream.netlify.app",
+      );
+      res.setHeader("Accept-Ranges", "bytes");
+    },
+  }),
+);
 
 app.use(express.json());
 
