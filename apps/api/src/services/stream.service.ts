@@ -111,6 +111,8 @@ export async function stopExpiredStreams() {
   const expiredStreams = await findExpiredLiveStreams();
 
   for (const stream of expiredStreams) {
+    await stopStreamRecording(stream.id);
+
     try {
       await deleteRoom(stream.room_name);
     } catch {
