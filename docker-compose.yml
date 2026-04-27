@@ -35,16 +35,17 @@ services:
   egress:
     image: livekit/egress:latest
     container_name: live-shopping-egress
-    command: --config /etc/egress.yaml
+    command: ["egress", "--config", "/etc/egress.yaml"]
     env_file:
-      - .env
+    - .env
+    shm_size: "1gb"
     volumes:
-      - ./infra/egress/egress.yaml:/etc/egress.yaml
-      - ./recordings:/recordings
+    - ./infra/egress/egress.yaml:/etc/egress.yaml
+    - ./recordings:/recordings
     restart: unless-stopped
     depends_on:
-      - redis
-      - livekit
+    - redis
+    - livekit
 
   redis:
     image: redis:7-alpine

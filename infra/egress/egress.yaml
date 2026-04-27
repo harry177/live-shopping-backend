@@ -6,4 +6,4 @@ redis:
   address: redis:6379
 
 logging:
-  level: info
+  level: debug
