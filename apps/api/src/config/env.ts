@@ -14,6 +14,9 @@ const envSchema = z.object({
   LIVEKIT_API_SECRET: z.string().min(1),
 
   PUBLIC_API_URL: z.string().min(1),
+
+  SRS_RTMP_BASE_URL: z.string().min(1),
+  HLS_PUBLIC_BASE_URL: z.string().min(1),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -12,6 +12,8 @@ export interface StreamRow {
   ended_at: Date | null;
   deadline_at: Date;
   created_at: Date;
+  hls_egress_id: string | null;
+  hls_playback_url: string | null;
 }
 
 export async function findActiveStream(): Promise<StreamRow | null> {
@@ -22,7 +24,7 @@ export async function findActiveStream(): Promise<StreamRow | null> {
       where status = 'live'
       order by created_at desc
       limit 1
-    `
+    `,
   );
 
   return result.rows[0] ?? null;
@@ -52,7 +54,7 @@ export async function createStream(params: {
       params.streamerDisplayName,
       params.roomName,
       params.deadlineAt,
-    ]
+    ],
   );
 
   return result.rows[0];
@@ -66,7 +68,7 @@ export async function findStreamById(id: string): Promise<StreamRow | null> {
       where id = $1
       limit 1
     `,
-    [id]
+    [id],
   );
 
   return result.rows[0] ?? null;
@@ -81,7 +83,7 @@ export async function endStream(id: string): Promise<void> {
       where id = $1
         and status = 'live'
     `,
-    [id]
+    [id],
   );
 }
 
@@ -92,8 +94,24 @@ export async function findExpiredLiveStreams(): Promise<StreamRow[]> {
       from streams
       where status = 'live'
         and deadline_at <= now()
-    `
+    `,
   );
 
   return result.rows;
+}
+
+export async function updateStreamHls(params: {
+  streamId: string;
+  hlsEgressId: string;
+  hlsPlaybackUrl: string;
+}): Promise<void> {
+  await db.query(
+    `
+      update streams
+      set hls_egress_id = $2,
+          hls_playback_url = $3
+      where id = $1
+    `,
+    [params.streamId, params.hlsEgressId, params.hlsPlaybackUrl],
+  );
 }
