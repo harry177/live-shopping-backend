@@ -5,13 +5,21 @@ import {
   findExpiredLiveStreams,
   findStreamById,
 } from "../repositories/stream.repository";
-import { generateGuestIdentity, generateRoomName } from "../utils/random";
+
+import { generateRoomName } from "../utils/random";
+
 import {
   createPublisherToken,
-  createViewerToken,
   deleteRoom,
 } from "./livekit.service";
+
 import { stopStreamRecording } from "./recording.service";
+
+import {
+  startStreamHlsEgress,
+  stopStreamHlsEgress,
+} from "./hls.service";
+
 import { env } from "../config/env";
 import { AuthUser } from "../types/auth";
 
@@ -42,14 +50,22 @@ export async function startStream(user: AuthUser) {
     deadlineAt,
   });
 
+  // LiveKit token for streamer to publish stream
   const token = await createPublisherToken({
     roomName,
     participantIdentity: user.id,
     participantName: user.displayName,
   });
 
+  // HLS egress launch (LiveKit -> SRS)
+  const hls = await startStreamHlsEgress(stream);
+
   return {
-    stream,
+    stream: {
+      ...stream,
+      hls_playback_url: hls.playbackUrl,
+      hls_egress_id: hls.egressId,
+    },
     livekit: {
       token,
       wsUrl: env.LIVEKIT_WS_URL,
@@ -72,17 +88,21 @@ export async function stopStream(streamId: string, user: AuthUser) {
     return;
   }
 
+  // Stop HLS egress
+  await stopStreamHlsEgress(stream);
+
   await stopStreamRecording(stream.id);
 
   try {
     await deleteRoom(stream.room_name);
   } catch {
-    // room may already be gone
+    // ignore
   }
 
   await endStream(stream.id);
 }
 
+// Not returning LIVEKIT TOKEN anymore
 export async function createPublicViewerAccess(streamId: string) {
   const stream = await findStreamById(streamId);
 
@@ -90,19 +110,14 @@ export async function createPublicViewerAccess(streamId: string) {
     throw new Error("Live stream not found");
   }
 
-  const guestIdentity = generateGuestIdentity();
-
-  const token = await createViewerToken({
-    roomName: stream.room_name,
-    participantIdentity: guestIdentity,
-    participantName: guestIdentity,
-  });
+  if (!stream.hls_playback_url) {
+    throw new Error("Stream is not ready yet");
+  }
 
   return {
     stream,
-    livekit: {
-      token,
-      wsUrl: env.LIVEKIT_WS_URL,
+    hls: {
+      playbackUrl: stream.hls_playback_url,
     },
   };
 }
@@ -111,13 +126,13 @@ export async function stopExpiredStreams() {
   const expiredStreams = await findExpiredLiveStreams();
 
   for (const stream of expiredStreams) {
+    await stopStreamHlsEgress(stream);
+
     await stopStreamRecording(stream.id);
 
     try {
       await deleteRoom(stream.room_name);
-    } catch {
-      // ignore if already removed
-    }
+    } catch {}
 
     await endStream(stream.id);
   }
