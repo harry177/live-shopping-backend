@@ -6,6 +6,7 @@ import {
 import {
   getActiveStream,
   startStream,
+  startStreamHls,
   stopStream,
   createPublicViewerAccess,
 } from "../services/stream.service";
@@ -32,6 +33,28 @@ export async function startStreamController(req: Request, res: Response) {
   } catch (error) {
     return res.status(400).json({
       error: error instanceof Error ? error.message : "Failed to start stream",
+    });
+  }
+}
+
+export async function startStreamHlsController(
+  req: Request<{ id: string }>,
+  res: Response,
+) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const result = await startStreamHls(req.params.id, req.user);
+
+    return res.status(200).json(result);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to start HLS";
+
+    return res.status(message === "Forbidden" ? 403 : 400).json({
+      error: message,
     });
   }
 }
