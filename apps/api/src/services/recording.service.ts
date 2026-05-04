@@ -2,10 +2,12 @@ import {
   EgressClient,
   EncodedFileOutput,
   EncodedFileType,
+  StreamOutput,
+  StreamProtocol,
 } from "livekit-server-sdk";
 
 import { env } from "../config/env";
-import { findStreamById } from "../repositories/stream.repository";
+import { findStreamById, updateStreamHls } from "../repositories/stream.repository";
 import {
   completeRecording,
   createRecording,
@@ -19,7 +21,11 @@ const egressClient = new EgressClient(
   env.LIVEKIT_API_SECRET,
 );
 
-export async function startStreamRecording(streamId: string, userId: string) {
+export async function startStreamOutputs(
+  streamId: string,
+  userId: string,
+  shouldRecord: boolean,
+) {
   const stream = await findStreamById(streamId);
 
   if (!stream || stream.status !== "live") {
@@ -30,53 +36,93 @@ export async function startStreamRecording(streamId: string, userId: string) {
     throw new Error("Forbidden");
   }
 
-  const existingRecording = await findActiveRecordingByStreamId(stream.id);
-
-  if (existingRecording) {
-    return existingRecording;
+  if (stream.hls_egress_id && stream.hls_playback_url) {
+    return {
+      hls: {
+        playbackUrl: stream.hls_playback_url,
+      },
+    };
   }
 
+  const streamKey = stream.id;
+
+  // 🔹 RTMP (HLS через SRS)
+  const rtmpUrl = `${env.SRS_RTMP_BASE_URL}/${streamKey}`;
+  const hlsPlaybackUrl = `${env.HLS_PUBLIC_BASE_URL}/${streamKey}.m3u8`;
+
+  const rtmpOutput = new StreamOutput({
+    protocol: StreamProtocol.RTMP,
+    urls: [rtmpUrl],
+  });
+
+  // 🔹 MP4 (если включена запись)
   const fileName = `${stream.id}.mp4`;
   const filePath = `/recordings/${fileName}`;
-  const playbackUrl = `${env.PUBLIC_API_URL}/recordings/${fileName}`;
+  const recordingPlaybackUrl = `${env.PUBLIC_API_URL}/recordings/${fileName}`;
 
-  const output = new EncodedFileOutput({
+  const fileOutput = new EncodedFileOutput({
     filepath: filePath,
     fileType: EncodedFileType.MP4,
   });
 
+  // combined output
+  const output = shouldRecord
+    ? {
+        stream: rtmpOutput,
+        file: fileOutput,
+      }
+    : {
+        stream: rtmpOutput,
+      };
+
   const egress = await egressClient.startRoomCompositeEgress(
     stream.room_name,
-    {
-      file: output,
-    },
+    output,
     {
       layout: "speaker",
     },
   );
 
-  return createRecording({
+  await updateStreamHls({
     streamId: stream.id,
-    egressId: egress.egressId,
-    filePath,
-    playbackUrl,
+    hlsEgressId: egress.egressId,
+    hlsPlaybackUrl,
   });
+
+  if (shouldRecord) {
+    await createRecording({
+      streamId: stream.id,
+      egressId: egress.egressId,
+      filePath,
+      playbackUrl: recordingPlaybackUrl,
+    });
+  }
+
+  return {
+    hls: {
+      playbackUrl: hlsPlaybackUrl,
+    },
+  };
 }
 
-export async function stopStreamRecording(streamId: string) {
-  const recording = await findActiveRecordingByStreamId(streamId);
+export async function stopStreamOutputs(streamId: string) {
+  const stream = await findStreamById(streamId);
 
-  if (!recording) {
-    return;
-  }
+  if (!stream) return;
+
+  if (!stream.hls_egress_id) return;
 
   try {
-    await egressClient.stopEgress(recording.egress_id);
+    await egressClient.stopEgress(stream.hls_egress_id);
   } catch {
-    // egress may already be stopped
+    // ignore
   }
 
-  await completeRecording(recording.id);
+  const recording = await findActiveRecordingByStreamId(streamId);
+
+  if (recording) {
+    await completeRecording(recording.id);
+  }
 }
 
 export async function getCompletedRecordings() {

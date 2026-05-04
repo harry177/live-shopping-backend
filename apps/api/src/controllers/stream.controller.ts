@@ -1,12 +1,11 @@
 import { Request, Response } from "express";
 import {
   getCompletedRecordings,
-  startStreamRecording,
+  startStreamOutputs,
 } from "../services/recording.service";
 import {
   getActiveStream,
   startStream,
-  startStreamHls,
   stopStream,
   createPublicViewerAccess,
 } from "../services/stream.service";
@@ -37,8 +36,8 @@ export async function startStreamController(req: Request, res: Response) {
   }
 }
 
-export async function startStreamHlsController(
-  req: Request<{ id: string }>,
+export async function startStreamOutputsController(
+  req: Request<{ id: string }, unknown, { shouldRecord?: boolean }>,
   res: Response,
 ) {
   try {
@@ -46,12 +45,16 @@ export async function startStreamHlsController(
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const result = await startStreamHls(req.params.id, req.user);
+    const result = await startStreamOutputs(
+      req.params.id,
+      req.user.id,
+      Boolean(req.body.shouldRecord),
+    );
 
     return res.status(200).json(result);
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Failed to start HLS";
+      error instanceof Error ? error.message : "Failed to start stream outputs";
 
     return res.status(message === "Forbidden" ? 403 : 400).json({
       error: message,
@@ -98,28 +101,6 @@ export async function createViewerTokenController(
   } catch (error) {
     return res.status(404).json({
       error: error instanceof Error ? error.message : "Failed to join stream",
-    });
-  }
-}
-
-export async function startRecordingController(
-  req: Request<{ id: string }>,
-  res: Response,
-) {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    const recording = await startStreamRecording(req.params.id, req.user.id);
-
-    return res.status(200).json({ recording });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to start recording";
-
-    return res.status(message === "Forbidden" ? 403 : 400).json({
-      error: message,
     });
   }
 }
