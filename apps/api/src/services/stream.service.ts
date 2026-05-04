@@ -8,17 +8,11 @@ import {
 
 import { generateRoomName } from "../utils/random";
 
-import {
-  createPublisherToken,
-  deleteRoom,
-} from "./livekit.service";
+import { createPublisherToken, deleteRoom } from "./livekit.service";
 
 import { stopStreamRecording } from "./recording.service";
 
-import {
-  startStreamHlsEgress,
-  stopStreamHlsEgress,
-} from "./hls.service";
+import { startStreamHlsEgress, stopStreamHlsEgress } from "./hls.service";
 
 import { env } from "../config/env";
 import { AuthUser } from "../types/auth";
@@ -50,25 +44,55 @@ export async function startStream(user: AuthUser) {
     deadlineAt,
   });
 
-  // LiveKit token for streamer to publish stream
   const token = await createPublisherToken({
     roomName,
     participantIdentity: user.id,
     participantName: user.displayName,
   });
 
-  // HLS egress launch (LiveKit -> SRS)
+  return {
+    stream,
+    livekit: {
+      token,
+      wsUrl: env.LIVEKIT_WS_URL,
+    },
+  };
+}
+
+export async function startStreamHls(streamId: string, user: AuthUser) {
+  const stream = await findStreamById(streamId);
+
+  if (!stream) {
+    throw new Error("Stream not found");
+  }
+
+  if (stream.streamer_user_id !== user.id) {
+    throw new Error("Forbidden");
+  }
+
+  if (stream.status !== "live") {
+    throw new Error("Stream is not live");
+  }
+
+  if (stream.hls_egress_id && stream.hls_playback_url) {
+    return {
+      stream,
+      hls: {
+        playbackUrl: stream.hls_playback_url,
+      },
+    };
+  }
+
   const hls = await startStreamHlsEgress(stream);
 
   return {
     stream: {
       ...stream,
-      hls_playback_url: hls.playbackUrl,
       hls_egress_id: hls.egressId,
+      hls_playback_url: hls.playbackUrl,
     },
-    livekit: {
-      token,
-      wsUrl: env.LIVEKIT_WS_URL,
+    hls: {
+      playbackUrl: hls.playbackUrl,
     },
   };
 }
