@@ -46,7 +46,7 @@ export async function startStreamOutputs(
 
   const streamKey = stream.id;
 
-  // 🔹 RTMP (HLS через SRS)
+  // RTMP (HLS через SRS)
   const rtmpUrl = `${env.SRS_RTMP_BASE_URL}/${streamKey}`;
   const hlsPlaybackUrl = `${env.HLS_PUBLIC_BASE_URL}/${streamKey}.m3u8`;
 
@@ -55,7 +55,7 @@ export async function startStreamOutputs(
     urls: [rtmpUrl],
   });
 
-  // 🔹 MP4 (если включена запись)
+  // MP4 (если включена запись)
   const fileName = `${stream.id}.mp4`;
   const filePath = `/recordings/${fileName}`;
   const recordingPlaybackUrl = `${env.PUBLIC_API_URL}/recordings/${fileName}`;
