@@ -74,5 +74,6 @@ services:
       - "8080:8080"
     volumes:
       - ./infra/srs/srs.conf:/usr/local/srs/conf/srs.conf
+      - ./infra/srs/hls:/usr/local/srs/objs/nginx/html/live
     command: ./objs/srs -c conf/srs.conf
     restart: unless-stopped
