@@ -29,28 +29,28 @@ export async function waitForHlsReady(streamId: string) {
       }
 
       const manifest = await manifestResponse.text();
+
       const segments = manifest
         .split("\n")
         .map((line) => line.trim())
         .filter((line) => line.endsWith(".ts"));
 
-      if (segments.length < 2) {
+      if (segments.length < 5) {
         await sleep(1000);
         continue;
       }
 
-      const latestSegments = segments.slice(-2);
       const baseUrl = stream.hls_playback_url.replace(/[^/]+\.m3u8$/, "");
 
       const segmentChecks = await Promise.all(
-        latestSegments.map(async (segment) => {
+        segments.map(async (segment) => {
           try {
-            const segmentResponse = await fetch(`${baseUrl}${segment}`, {
+            const response = await fetch(`${baseUrl}${segment}`, {
               method: "HEAD",
               signal: AbortSignal.timeout(3000),
             });
 
-            return segmentResponse.ok;
+            return response.ok;
           } catch {
             return false;
           }
@@ -62,6 +62,8 @@ export async function waitForHlsReady(streamId: string) {
         continue;
       }
 
+      console.log("[HLS READY] ready", streamId, segments.length);
+
       await updatePlaybackStatus({
         streamId,
         playbackStatus: "ready",
@@ -72,6 +74,8 @@ export async function waitForHlsReady(streamId: string) {
       await sleep(1000);
     }
   }
+
+  console.log("[HLS READY] failed", streamId);
 
   await updatePlaybackStatus({
     streamId,

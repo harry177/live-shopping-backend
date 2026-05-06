@@ -14,7 +14,7 @@ import { env } from "../config/env";
 import { AuthUser } from "../types/auth";
 import { stopStreamOutputs } from "./recording.service";
 
-const STREAM_DURATION_MS = 60 * 1000;
+const STREAM_DURATION_MS = 2 *60 * 1000;
 
 export async function getActiveStream() {
   return findActiveStream();
