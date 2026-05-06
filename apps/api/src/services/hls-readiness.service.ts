@@ -35,7 +35,7 @@ export async function waitForHlsReady(streamId: string) {
         .map((line) => line.trim())
         .filter((line) => line.endsWith(".ts"));
 
-      if (segments.length < 5) {
+      if (segments.length < 3) {
         await sleep(1000);
         continue;
       }
@@ -75,12 +75,9 @@ export async function waitForHlsReady(streamId: string) {
     }
   }
 
-  console.log("[HLS READY] failed", streamId);
+  console.log("[HLS READY] not ready after attempts", streamId);
 
-  await updatePlaybackStatus({
-    streamId,
-    playbackStatus: "failed",
-  });
+  return;
 }
 
 function sleep(ms: number) {
