@@ -3,6 +3,10 @@ import {
   updatePlaybackStatus,
 } from "../repositories/stream.repository";
 
+const MAX_ATTEMPTS = 30;
+const MIN_READY_SEGMENTS = 5;
+const STABLE_DELAY_MS = 5000;
+
 export async function waitForHlsReady(streamId: string) {
   console.log("[HLS READY] start", streamId);
 
@@ -15,54 +19,43 @@ export async function waitForHlsReady(streamId: string) {
 
   console.log("[HLS READY] url", stream.hls_playback_url);
 
-  const maxAttempts = 30;
-
-  for (let i = 0; i < maxAttempts; i++) {
+  for (let i = 0; i < MAX_ATTEMPTS; i++) {
     try {
-      const manifestResponse = await fetch(stream.hls_playback_url, {
-        signal: AbortSignal.timeout(3000),
-      });
+      const firstSegments = await getReadySegments(stream.hls_playback_url);
 
-      if (!manifestResponse.ok) {
+      if (firstSegments.length < MIN_READY_SEGMENTS) {
         await sleep(1000);
         continue;
       }
 
-      const manifest = await manifestResponse.text();
+      await sleep(STABLE_DELAY_MS);
 
-      const segments = manifest
-        .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line.endsWith(".ts"));
+      const secondSegments = await getReadySegments(stream.hls_playback_url);
 
-      if (segments.length < 3) {
+      if (secondSegments.length < MIN_READY_SEGMENTS) {
         await sleep(1000);
         continue;
       }
 
-      const baseUrl = stream.hls_playback_url.replace(/[^/]+\.m3u8$/, "");
+      const firstLastSegment = firstSegments[firstSegments.length - 1];
+      const secondLastSegment = secondSegments[secondSegments.length - 1];
 
-      const segmentChecks = await Promise.all(
-        segments.map(async (segment) => {
-          try {
-            const response = await fetch(`${baseUrl}${segment}`, {
-              method: "HEAD",
-              signal: AbortSignal.timeout(3000),
-            });
+      if (!firstLastSegment || !secondLastSegment) {
+        await sleep(1000);
+        continue;
+      }
 
-            return response.ok;
-          } catch {
-            return false;
-          }
-        }),
+      if (firstLastSegment === secondLastSegment) {
+        await sleep(1000);
+        continue;
+      }
+
+      console.log(
+        "[HLS READY] ready",
+        streamId,
+        secondSegments.length,
+        secondLastSegment,
       );
-
-      if (!segmentChecks.every(Boolean)) {
-        await sleep(1000);
-        continue;
-      }
-
-      console.log("[HLS READY] ready", streamId, segments.length);
 
       await updatePlaybackStatus({
         streamId,
@@ -70,14 +63,57 @@ export async function waitForHlsReady(streamId: string) {
       });
 
       return;
-    } catch {
+    } catch (error) {
+      console.log("[HLS READY] attempt failed", streamId, error);
       await sleep(1000);
     }
   }
 
   console.log("[HLS READY] not ready after attempts", streamId);
+}
 
-  return;
+async function getReadySegments(hlsPlaybackUrl: string) {
+  const manifestResponse = await fetch(hlsPlaybackUrl, {
+    signal: AbortSignal.timeout(3000),
+  });
+
+  if (!manifestResponse.ok) {
+    return [];
+  }
+
+  const manifest = await manifestResponse.text();
+
+  const segments = manifest
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.endsWith(".ts"));
+
+  if (!segments.length) {
+    return [];
+  }
+
+  const baseUrl = hlsPlaybackUrl.replace(/[^/]+\.m3u8$/, "");
+
+  const checks = await Promise.all(
+    segments.map(async (segment) => {
+      try {
+        const response = await fetch(`${baseUrl}${segment}`, {
+          method: "HEAD",
+          signal: AbortSignal.timeout(3000),
+        });
+
+        return response.ok;
+      } catch {
+        return false;
+      }
+    }),
+  );
+
+  if (!checks.every(Boolean)) {
+    return [];
+  }
+
+  return segments;
 }
 
 function sleep(ms: number) {
