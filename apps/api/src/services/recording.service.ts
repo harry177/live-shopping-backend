@@ -93,7 +93,9 @@ export async function startStreamOutputs(
     hlsPlaybackUrl,
   });
 
-  void waitForHlsReady(stream.id);
+  void waitForHlsReady(stream.id).catch((error) => {
+    console.error("[HLS READY] failed", error);
+  });
 
   if (shouldRecord) {
     await createRecording({

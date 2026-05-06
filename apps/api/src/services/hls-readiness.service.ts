@@ -4,11 +4,16 @@ import {
 } from "../repositories/stream.repository";
 
 export async function waitForHlsReady(streamId: string) {
+  console.log("[HLS READY] start", streamId);
+
   const stream = await findStreamById(streamId);
 
   if (!stream?.hls_playback_url) {
+    console.log("[HLS READY] no playback url", streamId);
     return;
   }
+
+  console.log("[HLS READY] url", stream.hls_playback_url);
 
   const maxAttempts = 30;
 
