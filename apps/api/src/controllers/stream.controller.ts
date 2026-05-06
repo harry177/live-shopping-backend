@@ -11,6 +11,8 @@ import {
 } from "../services/stream.service";
 
 export async function getActiveStreamController(_req: Request, res: Response) {
+  res.setHeader("Cache-Control", "no-store");
+
   const stream = await getActiveStream();
 
   return res.status(200).json({
