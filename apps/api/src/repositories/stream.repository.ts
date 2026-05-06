@@ -2,12 +2,15 @@ import { db } from "../db";
 
 export type StreamStatus = "live" | "ended";
 
+export type PlaybackStatus = "preparing" | "ready" | "failed";
+
 export interface StreamRow {
   id: string;
   streamer_user_id: string;
   streamer_display_name: string;
   room_name: string;
   status: StreamStatus;
+  playback_status: PlaybackStatus;
   started_at: Date | null;
   ended_at: Date | null;
   deadline_at: Date;
@@ -113,5 +116,19 @@ export async function updateStreamHls(params: {
       where id = $1
     `,
     [params.streamId, params.hlsEgressId, params.hlsPlaybackUrl],
+  );
+}
+
+export async function updatePlaybackStatus(params: {
+  streamId: string;
+  playbackStatus: PlaybackStatus;
+}): Promise<void> {
+  await db.query(
+    `
+      update streams
+      set playback_status = $2
+      where id = $1
+    `,
+    [params.streamId, params.playbackStatus],
   );
 }

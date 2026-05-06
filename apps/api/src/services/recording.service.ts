@@ -7,13 +7,17 @@ import {
 } from "livekit-server-sdk";
 
 import { env } from "../config/env";
-import { findStreamById, updateStreamHls } from "../repositories/stream.repository";
+import {
+  findStreamById,
+  updateStreamHls,
+} from "../repositories/stream.repository";
 import {
   completeRecording,
   createRecording,
   findActiveRecordingByStreamId,
   listCompletedRecordings,
 } from "../repositories/recording.repository";
+import { waitForHlsReady } from "./hls-readiness.service";
 
 const egressClient = new EgressClient(
   env.LIVEKIT_HTTP_URL,
@@ -88,6 +92,8 @@ export async function startStreamOutputs(
     hlsEgressId: egress.egressId,
     hlsPlaybackUrl,
   });
+
+  void waitForHlsReady(stream.id);
 
   if (shouldRecord) {
     await createRecording({
