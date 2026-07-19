@@ -1,14 +1,16 @@
-# live-shopping-backend
+# Live Shopping Platform
 
-Backend and realtime infrastructure for the WebRTC MVP.
+A full-stack live streaming platform built on top of the architectural concepts explored in the Video Chat project.
 
-## Includes
-- Express API
-- LiveKit
-- coturn
-- Docker Compose setup
+It extends the media pipeline with LiveKit Egress, SRS, HLS generation, object storage and CDN delivery.
 
-## Services
-- API: http://localhost:3001
-- LiveKit: ws://localhost:7880
-- TURN: udp/tcp 3478
+## Architecture
+
+[Architecture Overview](./ARCHITECTURE.md)
+
+## Related Projects
+
+Video Chat
+
+https://github.com/harry177/video-chat-backend
+https://github.com/harry177/video-chat-frontend
